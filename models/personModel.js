@@ -24,6 +24,10 @@ const personSchema = new mongoose.Schema({
         type:Boolean,
        default:false
     },
+    isLoggedIn:{
+        type:Boolean,
+       default:false
+    },
     otpId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'otpverification'

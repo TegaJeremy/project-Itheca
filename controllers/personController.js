@@ -3,7 +3,7 @@ const sendEmail = require("../middleware/mail");
 const bcrypt = require('bcryptjs');
 const otpgenerator = require("otp-generator");
 const otpModel = require("../models/otpverifycationModel");
-const sendMail = require("../utils/mailTemplates")
+const {sendMail} = require("../utils/mailTemplates")
 const jwt = require ("jsonwebtoken")
 
 const signupPerson = async (req, res) => {
@@ -32,7 +32,7 @@ const signupPerson = async (req, res) => {
 
         // Hash the OTP and save it to the database
         const hashedOTP = await hashOTP(OTP);
-
+        
         const userotp = new otpModel({
             otp: hashedOTP,
         });
@@ -178,13 +178,75 @@ const resendVerificationOtp = async (req, res) => {
     }
 };
 
+const logIn = async(req, res)=>{
+    try {
+        const {emailOrPhoneNumber, password}= req.body
+        const user = await personModel.findOne({$or:[{email:emailOrPhoneNumber},{phoneNumber:emailOrPhoneNumber}]})
+        if(!user){
+           return  res.status(401).json({message:'user not found'})
+        }
+        const matchedpassword = await bcrypt.compare(password, user.password)
+        if(!matchedpassword){
+           return res.status(401).json({message:'Incorrect password'})
+        }
+        if(!user.isVerified){
+            return res.status(401).json({message:'user is not verified'})
+        }
+
+        const token =  jwt.sign({
+            email:user.email,
+            id: user._id,
+            phoneNumber:user.phoneNumber
+        
+        },
+        process.env.SECRET_KEY, {expiresIn:"1d"}       
+        )
+        user.isLoggedIn = true
+         return res.status(200).json({message:'login successfully', 
+    data: token , 
+    userid:user._id
+})
+
+
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+
+}
+
+const logout = async(req,res)=>{
+    try {
+        const {userId } = req.params
+        const user = await personModel.findOne({_id: userId})
+
+        //update user model to logout
+
+        const logOutUser = await personModel.findByIdAndUpdate(userId,
+            {isLoggedIn:false, token:null},
+            {new:true}
+            )
+            if (!logOutUser){
+                return res.status(404).json({message:'user not found'})
+            }
+            res.status(200).json({message:'user logged out successfully'})
+    } catch (error) {
+        res.status(500).json(error.message)
+        
+    }
+}
+
+
+
+
 
 
 
 module.exports = {
     signupPerson,
     verifyOtp,
-    resendVerificationOtp
+    resendVerificationOtp,
+    logIn,
+    logout
 };
 
 

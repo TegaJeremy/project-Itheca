@@ -1,4 +1,4 @@
- const cloudinary = require('cloudinary')v2
+ const cloudinary = require('cloudinary').v2
 
 
           
@@ -8,3 +8,4 @@ cloudinary.config({
   api_secret: 'dIVo-elNdAeGOALdA_AIPIaRXO4' 
 });
  module.exports = cloudinary
+ 
